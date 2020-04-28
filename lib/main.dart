@@ -1,5 +1,7 @@
 import 'dart:collection';
+import 'dart:convert';
 
+import 'package:country_list_pick/country_list_pick.dart';
 import 'package:currencyconverter/Currency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,11 +31,52 @@ class CurrencyWidget extends StatefulWidget {
 }
 
 class _CurrencyState extends State<CurrencyWidget> {
+  List<Currency> allCurrencies = [];
+  
   Future<Map> readFile() async {
     String currencies = await rootBundle.loadString('assets/currencies');
     String countries = await rootBundle.loadString('assets/countries');
     String rates = await rootBundle.loadString('assets/rates');
+
+    Map<String, dynamic> rateMap = json.decode(rates);
+    Map<String, dynamic> countryMap = json.decode(countries);
+    Map<String, dynamic> currenciesMap = json.decode(currencies);
+    String baseCurrency = rateMap['base'];
+    int timestamp = rateMap['timestamp'];
+    Map<String, double> allRates = rateMap['rates'];
+
+
+    Map<String, String> countriesWithCountryName = countryMap['names'];
+    Map<String, String> countriesWithCountryCode = countryMap['currencies'];
+    Map<String, String> currencyCodeWithCurrencyName =
+        currenciesMap['countryCurrencies'];
+
+    String countryCode;
+    String countryName;
+    String currencyCode;
+    String currencyName;
+    double currentRate;
+    countriesWithCountryName.forEach((key, value) {
+      countryCode = key;
+      countryName = value;
+      currencyCode = countriesWithCountryCode[countryCode];
+      currentRate = allRates[countryCode];
+      currencyName = currencyCodeWithCurrencyName[currencyCode];
+
+      Currency currency = new Currency(
+          baseCurrencyCode: baseCurrency,
+          countryCode: countryCode,
+          countryName: countryName,
+          currencyCode: currencyCode,
+          rate: currentRate,
+          timestamp: timestamp,
+          currencyName: currencyName);
+
+      allCurrencies.add(currency);
+    });
+
     Map<String, dynamic> map = new Map();
+
     map.update(
       "currencies",
       (dynamic old) {
@@ -69,9 +112,11 @@ class _CurrencyState extends State<CurrencyWidget> {
     return Scaffold(
       body: Container(
         child: ListView(
-          children: <Widget>[
+        children: List<Widget>.generate(allCurrencies.length, (generator){
+          return Row(children: <Widget>[
             
-          ],
+          ],);
+        }),  
         ),
       ),
     );
