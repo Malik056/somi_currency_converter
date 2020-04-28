@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
 }
 
 class CurrencyWidget extends StatefulWidget {
+  CurrencyWidget({Key key}) : super(key: key);
   @override
   State<StatefulWidget> createState() {
     return _CurrencyState();
@@ -31,24 +32,29 @@ class CurrencyWidget extends StatefulWidget {
 }
 
 class _CurrencyState extends State<CurrencyWidget> {
-  List<Currency> allCurrencies = [];
-  
-  Future<Map> readFile() async {
-    String currencies = await rootBundle.loadString('assets/currencies');
-    String countries = await rootBundle.loadString('assets/countries');
-    String rates = await rootBundle.loadString('assets/rates');
+  Future<List<Currency>> readFile() async {
+    String currencies = await rootBundle.loadString('assets/currencies.json');
+    String countries = await rootBundle.loadString('assets/countries.json');
+    String rates = await rootBundle.loadString('assets/rates.json');
+    List<Currency> allCurrencies = [];
 
     Map<String, dynamic> rateMap = json.decode(rates);
     Map<String, dynamic> countryMap = json.decode(countries);
     Map<String, dynamic> currenciesMap = json.decode(currencies);
     String baseCurrency = rateMap['base'];
     int timestamp = rateMap['timestamp'];
-    Map<String, double> allRates = rateMap['rates'];
-
-
-    Map<String, String> countriesWithCountryName = countryMap['names'];
-    Map<String, String> countriesWithCountryCode = countryMap['currencies'];
-    Map<String, String> currencyCodeWithCurrencyName =
+    Map<String, double> allRates = {};
+    rateMap['rates'].forEach((k, v) {
+      allRates.putIfAbsent(k, () {
+        if(v.runtimeType == int) {
+          return (v as int).toDouble();
+        }
+        else return v;
+      });
+    });
+    Map<String, dynamic> countriesWithCountryName = countryMap['names'];
+    Map<String, dynamic> countriesWithCountryCode = countryMap['currencies'];
+    Map<String, dynamic> currencyCodeWithCurrencyName =
         currenciesMap['countryCurrencies'];
 
     String countryCode;
@@ -75,50 +81,36 @@ class _CurrencyState extends State<CurrencyWidget> {
       allCurrencies.add(currency);
     });
 
-    Map<String, dynamic> map = new Map();
-
-    map.update(
-      "currencies",
-      (dynamic old) {
-        return currencies;
-      },
-      ifAbsent: () {
-        return currencies;
-      },
-    );
-    map.update(
-      "countries",
-      (dynamic old) {
-        return countries;
-      },
-      ifAbsent: () {
-        return countries;
-      },
-    );
-    map.update(
-      "rates",
-      (dynamic old) {
-        return rates;
-      },
-      ifAbsent: () {
-        return rates;
-      },
-    );
-    return map;
+    return allCurrencies;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        child: ListView(
-        children: List<Widget>.generate(allCurrencies.length, (generator){
-          return Row(children: <Widget>[
-            
-          ],);
-        }),  
-        ),
+      appBar: AppBar(
+        title: Text('Select Flag'),
       ),
+      body: FutureBuilder<List<Currency>>(
+          future: readFile(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            return Container(
+              child: ListView(
+                children: List<Widget>.generate(snapshot.data.length, (index) {
+                  return Row(
+                    children: <Widget>[
+                      Image.asset(
+                          'images/${snapshot.data[index].countryCode.toLowerCase()}.png'),
+                    ],
+                  );
+                }),
+              ),
+            );
+          }),
     );
   }
 }
