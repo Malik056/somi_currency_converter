@@ -46,10 +46,10 @@ class _CurrencyState extends State<CurrencyWidget> {
     Map<String, double> allRates = {};
     rateMap['rates'].forEach((k, v) {
       allRates.putIfAbsent(k, () {
-        if(v.runtimeType == int) {
+        if (v.runtimeType == int) {
           return (v as int).toDouble();
-        }
-        else return v;
+        } else
+          return v;
       });
     });
     Map<String, dynamic> countriesWithCountryName = countryMap['names'];
@@ -66,7 +66,7 @@ class _CurrencyState extends State<CurrencyWidget> {
       countryCode = key;
       countryName = value;
       currencyCode = countriesWithCountryCode[countryCode];
-      currentRate = allRates[countryCode];
+      currentRate = allRates[currencyCode];
       currencyName = currencyCodeWithCurrencyName[currencyCode];
 
       Currency currency = new Currency(
@@ -101,11 +101,31 @@ class _CurrencyState extends State<CurrencyWidget> {
             return Container(
               child: ListView(
                 children: List<Widget>.generate(snapshot.data.length, (index) {
-                  return Row(
-                    children: <Widget>[
-                      Image.asset(
-                          'images/${snapshot.data[index].countryCode.toLowerCase()}.png'),
-                    ],
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: GestureDetector(
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context){
+                          snapshot.data[index]
+                        }));
+                      },
+                      child: Row(
+                        children: <Widget>[
+                          Image.asset(
+                              'images/${snapshot.data[index].countryCode.toLowerCase()}.png'),
+                          SizedBox(
+                            width: 10,
+                          ),
+                          Text('${snapshot.data[index].currencyName}'),
+                          Expanded(
+                            child: Text(
+                              '${snapshot.data[index].rate}',
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }),
               ),
@@ -171,23 +191,30 @@ class _MyHomePageState extends State<MyHomePage> {
               SizedBox(
                 height: 10,
               ),
-              Row(
-                children: <Widget>[
-                  Image.asset('images/pk.png'),
-                  SizedBox(
-                    width: 30,
-                  ),
-                  Text(
-                    'Country',
-                  ),
-                  Expanded(
-                      child: Text('0.0',
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                            fontSize: 30,
-                            color: fromColor,
-                          ))),
-                ],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (build) {
+                    return CurrencyWidget();
+                  }));
+                },
+                child: Row(
+                  children: <Widget>[
+                    Image.asset('images/pk.png'),
+                    SizedBox(
+                      width: 30,
+                    ),
+                    Text(
+                      'Country',
+                    ),
+                    Expanded(
+                        child: Text('0.0',
+                            textAlign: TextAlign.end,
+                            style: TextStyle(
+                              fontSize: 30,
+                              color: fromColor,
+                            ))),
+                  ],
+                ),
               ),
               Spacer(),
               VirtualKeyboard(
