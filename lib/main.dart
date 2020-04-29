@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(),
     );
   }
 }
@@ -106,14 +106,7 @@ class _CurrencyState extends State<CurrencyWidget> {
                     padding: const EdgeInsets.all(8.0),
                     child: GestureDetector(
                       onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context){
-                          return MyHomePage(
-                            countryCode: snapshot.data[index].countryCode,
-                            countryName: snapshot.data[index].countryName,
-                            currencyCode: snapshot.data[index].currencyCode,
-                            currencyRate: snapshot.data[index].rate,
-                          );
-                        }));
+                        Navigator.pop(context,snapshot.data[index]);
                       },
                       child: Row(
                         children: <Widget>[
@@ -142,17 +135,17 @@ class _CurrencyState extends State<CurrencyWidget> {
 }
 
 class MyHomePage extends StatefulWidget {
-  String countryCode, currencyCode, countryName;
-  double  currencyRate;
-  MyHomePage({Key key, this.title,this.countryCode,this.countryName,this.currencyCode,this.currencyRate}) : super(key: key);
+  final Currency toCurrency,fromCurrency;
+  MyHomePage({Key key, this.toCurrency, this.fromCurrency}) : super(key: key);
 
-  final String title;
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState(fromCurrency: fromCurrency,toCurrency: toCurrency);
 }
 
 class _MyHomePageState extends State<MyHomePage> {
 
+  Currency toCurrency,fromCurrency;
+  _MyHomePageState({this.toCurrency,this.fromCurrency});
   
   Color fromColor = Colors.black;
   Color toColor = Colors.black;
@@ -161,7 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text('Select Country'),
       ),
       body: SafeArea(
         minimum: EdgeInsets.all(8),
@@ -169,8 +162,8 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             children: <Widget>[
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                   fromCurrency = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) {
@@ -181,15 +174,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: Row(
                   children: <Widget>[
-                    Image.asset('images/${widget.countryCode}.png'),
+                    Image.asset('images/${fromCurrency.countryCode.toLowerCase()}.png'),
                     SizedBox(
                       width: 30,
                     ),
                     Text(
-                      '${widget.countryName}',
+                      '${fromCurrency.countryName}',
                     ),
                     Expanded(
-                        child: Text('${widget.currencyRate}',
+                        child: Text('${fromCurrency.rate}',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontSize: 30,
@@ -202,22 +195,22 @@ class _MyHomePageState extends State<MyHomePage> {
                 height: 10,
               ),
               GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (build) {
+                onTap: () async {
+                  toCurrency = await Navigator.push(context, MaterialPageRoute(builder: (build) {
                     return CurrencyWidget();
                   }));
                 },
                 child: Row(
                   children: <Widget>[
-                    Image.asset('images/pk.png'),
+                    Image.asset('images/${toCurrency.countryCode.toLowerCase()}.png'),
                     SizedBox(
                       width: 30,
                     ),
                     Text(
-                      'Country',
+                      '${toCurrency.countryName}',
                     ),
                     Expanded(
-                        child: Text('0.0',
+                        child: Text('${toCurrency.rate}',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontSize: 30,
