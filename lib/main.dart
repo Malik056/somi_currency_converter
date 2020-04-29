@@ -8,9 +8,67 @@ import 'package:flutter/material.dart';
 import 'package:virtual_keyboard/virtual_keyboard.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
-void main() => runApp(MyApp());
+Future<List<Currency>> readFile() async {
+  String currencies = await rootBundle.loadString('assets/currencies.json');
+  String countries = await rootBundle.loadString('assets/countries.json');
+  String rates = await rootBundle.loadString('assets/rates.json');
+  List<Currency> allCurrencies = [];
+
+  Map<String, dynamic> rateMap = json.decode(rates);
+  Map<String, dynamic> countryMap = json.decode(countries);
+  Map<String, dynamic> currenciesMap = json.decode(currencies);
+  String baseCurrency = rateMap['base'];
+  int timestamp = rateMap['timestamp'];
+  Map<String, double> allRates = {};
+  rateMap['rates'].forEach((k, v) {
+    allRates.putIfAbsent(k, () {
+      if (v.runtimeType == int) {
+        return (v as int).toDouble();
+      } else
+        return v;
+    });
+  });
+  Map<String, dynamic> countriesWithCountryName = countryMap['names'];
+  Map<String, dynamic> countriesWithCountryCode = countryMap['currencies'];
+  Map<String, dynamic> currencyCodeWithCurrencyName =
+      currenciesMap['countryCurrencies'];
+
+  String countryCode;
+  String countryName;
+  String currencyCode;
+  String currencyName;
+  double currentRate;
+  countriesWithCountryName.forEach((key, value) {
+    countryCode = key;
+    countryName = value;
+    currencyCode = countriesWithCountryCode[countryCode];
+    currentRate = allRates[currencyCode];
+    currencyName = currencyCodeWithCurrencyName[currencyCode];
+
+    Currency currency = new Currency(
+        baseCurrencyCode: baseCurrency,
+        countryCode: countryCode,
+        countryName: countryName,
+        currencyCode: currencyCode,
+        rate: currentRate,
+        timestamp: timestamp,
+        currencyName: currencyName);
+
+    allCurrencies.add(currency);
+  });
+
+  return allCurrencies;
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  List<Currency> allCurrencies = await readFile();
+  runApp(MyApp(data: allCurrencies));
+}
 
 class MyApp extends StatelessWidget {
+  final List<Currency> data;
+  MyApp({this.data});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -18,7 +76,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: MyHomePage(data: data),
     );
   }
 }
@@ -33,58 +91,6 @@ class CurrencyWidget extends StatefulWidget {
 }
 
 class _CurrencyState extends State<CurrencyWidget> {
-  Future<List<Currency>> readFile() async {
-    String currencies = await rootBundle.loadString('assets/currencies.json');
-    String countries = await rootBundle.loadString('assets/countries.json');
-    String rates = await rootBundle.loadString('assets/rates.json');
-    List<Currency> allCurrencies = [];
-
-    Map<String, dynamic> rateMap = json.decode(rates);
-    Map<String, dynamic> countryMap = json.decode(countries);
-    Map<String, dynamic> currenciesMap = json.decode(currencies);
-    String baseCurrency = rateMap['base'];
-    int timestamp = rateMap['timestamp'];
-    Map<String, double> allRates = {};
-    rateMap['rates'].forEach((k, v) {
-      allRates.putIfAbsent(k, () {
-        if (v.runtimeType == int) {
-          return (v as int).toDouble();
-        } else
-          return v;
-      });
-    });
-    Map<String, dynamic> countriesWithCountryName = countryMap['names'];
-    Map<String, dynamic> countriesWithCountryCode = countryMap['currencies'];
-    Map<String, dynamic> currencyCodeWithCurrencyName =
-        currenciesMap['countryCurrencies'];
-
-    String countryCode;
-    String countryName;
-    String currencyCode;
-    String currencyName;
-    double currentRate;
-    countriesWithCountryName.forEach((key, value) {
-      countryCode = key;
-      countryName = value;
-      currencyCode = countriesWithCountryCode[countryCode];
-      currentRate = allRates[currencyCode];
-      currencyName = currencyCodeWithCurrencyName[currencyCode];
-
-      Currency currency = new Currency(
-          baseCurrencyCode: baseCurrency,
-          countryCode: countryCode,
-          countryName: countryName,
-          currencyCode: currencyCode,
-          rate: currentRate,
-          timestamp: timestamp,
-          currencyName: currencyName);
-
-      allCurrencies.add(currency);
-    });
-
-    return allCurrencies;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,8 +111,8 @@ class _CurrencyState extends State<CurrencyWidget> {
                   return Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: GestureDetector(
-                      onTap: (){
-                        Navigator.pop(context,snapshot.data[index]);
+                      onTap: () {
+                        Navigator.pop(context, snapshot.data[index]);
                       },
                       child: Row(
                         children: <Widget>[
@@ -135,18 +141,30 @@ class _CurrencyState extends State<CurrencyWidget> {
 }
 
 class MyHomePage extends StatefulWidget {
-  final Currency toCurrency,fromCurrency;
-  MyHomePage({Key key, this.toCurrency, this.fromCurrency}) : super(key: key);
+  final List<Currency> data;
+  MyHomePage({Key key, this.data}) : super(key: key);
 
   @override
-  _MyHomePageState createState() => _MyHomePageState(fromCurrency: fromCurrency,toCurrency: toCurrency);
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  Currency toCurrency, fromCurrency;
 
-  Currency toCurrency,fromCurrency;
-  _MyHomePageState({this.toCurrency,this.fromCurrency});
-  
+  _MyHomePageState();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.data.forEach((currency) {
+      if (currency.countryCode.toLowerCase() == 'us') {
+        fromCurrency = currency;
+      } else if (currency.countryCode.toLowerCase() == 'pk') {
+        toCurrency = currency;
+      }
+    });
+  }
+
   Color fromColor = Colors.black;
   Color toColor = Colors.black;
 
@@ -163,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               GestureDetector(
                 onTap: () async {
-                   fromCurrency = await Navigator.push(
+                  fromCurrency = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) {
@@ -171,10 +189,12 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                     ),
                   );
+                  setState(() {});
                 },
                 child: Row(
                   children: <Widget>[
-                    Image.asset('images/${fromCurrency.countryCode.toLowerCase()}.png'),
+                    Image.asset(
+                        'images/${fromCurrency.countryCode.toLowerCase()}.png'),
                     SizedBox(
                       width: 30,
                     ),
@@ -182,7 +202,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       '${fromCurrency.countryName}',
                     ),
                     Expanded(
-                        child: Text('${fromCurrency.rate}',
+                        child: Text('0.0',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontSize: 30,
@@ -196,21 +216,22 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               GestureDetector(
                 onTap: () async {
-                  toCurrency = await Navigator.push(context, MaterialPageRoute(builder: (build) {
+                  toCurrency = await Navigator.push(context,
+                      MaterialPageRoute(builder: (build) {
                     return CurrencyWidget();
                   }));
                 },
                 child: Row(
                   children: <Widget>[
-                    Image.asset('images/${toCurrency.countryCode.toLowerCase()}.png'),
+                    // Image.asset('images/${toCurrency.countryCode.toLowerCase()}.png'),
                     SizedBox(
                       width: 30,
                     ),
-                    Text(
-                      '${toCurrency.countryName}',
-                    ),
+                    Text(''
+                        // '${toCurrency.countryName}',
+                        ),
                     Expanded(
-                        child: Text('${toCurrency.rate}',
+                        child: Text('0.0',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontSize: 30,
