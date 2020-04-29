@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
 
 class CurrencyWidget extends StatefulWidget {
   CurrencyWidget({Key key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() {
     return _CurrencyState();
@@ -106,7 +107,12 @@ class _CurrencyState extends State<CurrencyWidget> {
                     child: GestureDetector(
                       onTap: (){
                         Navigator.push(context, MaterialPageRoute(builder: (context){
-                          snapshot.data[index]
+                          return MyHomePage(
+                            countryCode: snapshot.data[index].countryCode,
+                            countryName: snapshot.data[index].countryName,
+                            currencyCode: snapshot.data[index].currencyCode,
+                            currencyRate: snapshot.data[index].rate,
+                          );
                         }));
                       },
                       child: Row(
@@ -136,7 +142,9 @@ class _CurrencyState extends State<CurrencyWidget> {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  String countryCode, currencyCode, countryName;
+  double  currencyRate;
+  MyHomePage({Key key, this.title,this.countryCode,this.countryName,this.currencyCode,this.currencyRate}) : super(key: key);
 
   final String title;
   @override
@@ -144,6 +152,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
+  
   Color fromColor = Colors.black;
   Color toColor = Colors.black;
 
@@ -171,15 +181,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: Row(
                   children: <Widget>[
-                    Image.asset('images/pk.png'),
+                    Image.asset('images/${widget.countryCode}.png'),
                     SizedBox(
                       width: 30,
                     ),
                     Text(
-                      'Country',
+                      '${widget.countryName}',
                     ),
                     Expanded(
-                        child: Text('0.0',
+                        child: Text('${widget.currencyRate}',
                             textAlign: TextAlign.end,
                             style: TextStyle(
                               fontSize: 30,
