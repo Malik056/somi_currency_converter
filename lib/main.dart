@@ -60,6 +60,7 @@ Future<List<Currency>> readFile() async {
   return allCurrencies;
 }
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   List<Currency> allCurrencies = await readFile();
